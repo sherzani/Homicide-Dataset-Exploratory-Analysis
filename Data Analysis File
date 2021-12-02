@@ -1,0 +1,193 @@
+# Zainab Sherani
+# Purpose: Exploratory Data Analysis on Homicide Dataset
+
+library(car)
+setwd("/Users/zainabsherani/Desktop/INST414/Data Journalism Article/")
+db <- read.csv("database.csv")
+
+# what kinds of crimes are there? 
+
+# gives rows and columns
+# 638454 rows and 24 columns 
+dim = dim(db) 
+
+# homicides with 0 in Victim.Count column which means 1 victim
+# 586059 
+one_victim <- sum(db$Victim.Count == 0)
+
+# homicides with 2 perpetrators
+# 54745
+dbl_homi <- sum(db$Perpetrator.Count == 1)
+
+# homicides with more than 2 perpetrators
+# 24871
+more_perp <- sum(db$Perpetrator.Count > 1)
+
+# single perpetrator homicides
+# 558838
+single_homi <- sum(db$Perpetrator.Count == 0)
+
+# remove all homicides with >= 2 perpetrators 
+temp <- filter(db, Perpetrator.Count == 0) 
+View(temp)
+
+# In the subsequent section, single perpetrator cases will be used unless noted otherwise
+
+# victims by race bar graph 
+# White = 276156, Black = 264507, Unknown = 5860 
+v_race <- table(temp$Victim.Race) 
+v_race_plot <- barplot(v_race, main="Victims by Race in Single Perpetrator Homicides", 
+                       xlab = "Victim Race", ylab = "Number of Victims") 
+
+# victims by race table
+# 49.42% = White and 47.33% = Black
+v_race_prop <- prop.table(table(temp$Victim.Race)) * 100
+
+# number of victims (0, 1, 2, 3) by race
+# 0: White victims = 250883
+# 0: Black victims = 250902
+# 1: W = 18183
+# 1: Bk = 10306
+# 2: W = 4215 
+# 2: Bk = 2058
+# Overall, Whites are mostly the victims for all victim counts except 0 (with Bk as highest) 
+# compared to all other racial groups
+v_freq_race <- table(temp$Victim.Race, temp$Victim.Count)
+
+# single perpetrators by race table (frequency)
+# white perp = 185377, Black = 176618, Unknown = 188771 
+p_freq_race <- table(temp$Perpetrator.Race)
+
+# single and 2 or more perpetrators by race table 
+# White = 218243, Bk = 214516
+all_p_freq <- table(db$Perpetrator.Race)
+
+# perpetrators by race table (proportionate)
+# 33.17% = White and 31.60% = Black and Unknown =  33.78%
+p_race_counts <- prop.table(table(temp$Perpetrator.Race)) * 100
+
+# perpetrators by race for more than 1 perpetrator table
+# 34.18% = White and 33.60% = Black and Unknown =  30.71% 
+p2_race_counts <- prop.table(table(db$Perpetrator.Race)) * 100
+
+# victim's race by perpetrator's race table
+# Black perp: Asian (786)     Black(151123)   Nat. Am. (299) Unknown (681)  White(23729)
+# White perp: Asian (1343)  Black(13478)    Nat. Am. (986)    Unknown(942)    White(168628)
+vc_race <- table(temp$Perpetrator.Race, temp$Victim.Race)
+
+# single perp. trend overtime
+trend_overtime <- table(temp$Perpetrator.Count, temp$Year)
+sp_trend_overtime <- barplot(trend_overtime)
+
+# trend overtime of Black Perpetrators
+bk_trend <- filter(temp, temp$Perpetrator.Race == "Black")
+bk_trend_tbl <- table(bk_trend$Perpetrator.Race, bk_trend$Year)
+bk_trend_graph <- barplot(bk_trend_tbl, main="Trend of Black Perpetrators 1980-2014",
+                          xlab="Year", ylab= "Perpetrator Count", col=c("skyblue"))
+
+# trend overtime of White Perpetrors
+w_trend <- filter(temp, temp$Perpetrator.Race == "White")
+w_trend_tbl <- table(w_trend$Perpetrator.Race, w_trend$Year)
+w_trend_graph <- barplot(w_trend_tbl, main="Trend of White Perpetrators 1980-2014",
+                         xlab="Year", ylab= "Perpetrator Count", col=c("lightgreen"))
+
+# victims' race by perpetrator race in Baltimore
+# Interestingly, Black on Black was less worse at 243 than White on White at 314. 
+# Black perpetrators killed 61 Whites and White perpetrators killed 28 Black victims
+# 304 (victim count of Black perpetrators) v. 343 (victim count of White perpetrators) 
+bmor <- filter(temp, temp$City=="Baltimore" & (temp$Perpetrator.Race=="Black" | temp$Perpetrator.Race=="White"))
+bmor_vp_tbl <- table(bmor$Perpetrator.Race, bmor$Victim.Race)
+
+bmor_vy_tbl <- table(bmor$Victim.Race, bmor$Year)
+bmor_trend_graph <- barplot(bmor_vy_tbl, main="Single Perpetrator Homicide Victims in Baltimore 1980-2014",
+                            xlab="Year", ylab= "Victim Count", col=c("limegreen", "orange", "yellow", "blue", "brown"))
+bmor_yv_tbl <- table(bmor$Year, bmor$Victim.Race)
+
+# only Baltimore - single perp, all perpetrator races 
+bmor1 <- filter(temp, temp$City=="Baltimore")
+bmor_vp_tbl1 <- table(bmor1$Perpetrator.Race, bmor1$Victim.Race)
+
+# non - hispanic perp by non-hispanic victim race in Baltimore
+# 31 bk on bk, 12 black perp and White victim
+# 64 white on white, 1 White perp and Black victim
+bmor_nh_pv <- filter(temp, temp$City=="Baltimore" & temp$Perpetrator.Ethnicity == "Not Hispanic" & temp$Victim.Ethnicity == "Not Hispanic")
+bmor_nh_tbl <- table(bmor_nh_pv$Perpetrator.Race, bmor_nh_pv$Victim.Race)
+
+# hispanic perp by all victims
+# only 1 hispanic person killed another hispanic person; no other murders
+bmor_h_perp <- filter(temp, temp$City=="Baltimore" & temp$Perpetrator.Ethnicity == "Hispanic" & temp$Victim.Ethnicity == "Hispanic")
+bmor_h_tbl <- table(bmor_h_perp$Perpetrator.Race, bmor_h_perp$Victim.Race)
+  
+  
+# only Blatimore - any number of perp
+# number of victims is not too far off, the single perp. stats can still hold
+b <- filter(db, db$City == "Baltimore")
+b_tbl <- table(b$Perpetrator.Race, b$Victim.Race)
+
+# The following section looks at ethnicity (Hispanic and Not-Hispanic) 
+# trend overtime of non-Hispanic Black Perpetrators
+bk_nh_trend <- filter(temp, temp$Perpetrator.Race == "Black" & temp$Perpetrator.Ethnicity == "Not Hispanic")
+bk_nh_trend_tbl <- table(bk_nh_trend$Year, bk_nh_trend$Perpetrator.Race)
+bk_nh_trend_graph <- barplot(bk_nh_trend_tbl, main="Trend of Non-Hispanic Black Perpetrators 1980-2014",
+                          xlab="Year", ylab= "Perpetrator Count", col=c("skyblue"))
+
+# trend overtime of non-Hispanic White Perpetrors
+w_nh_trend <- filter(temp, temp$Perpetrator.Race == "White" & temp$Perpetrator.Ethnicity == "Not Hispanic")
+w_nh_trend_tbl <- table(w_nh_trend$Year, w_nh_trend$Perpetrator.Race)
+w_nh_trend_graph <- barplot(w_nh_trend_tbl, main="Trend of Non-Hispanic White Perpetrators 1980-2014",
+                         xlab="Year", ylab= "Perpetrator Count", col=c("lightgreen"))
+
+# trend overtime of Hispanic 
+h_trend <- filter(temp, temp$Perpetrator.Ethnicity == "Hispanic")
+h_trend_tbl <- table(h_trend$Year, h_trend$Perpetrator.Race)
+h_trend_graph <- barplot(h_trend_tbl, main="Trend of Hispanic Perpetrators 1980-2014",
+                         xlab="Year", ylab= "Perpetrator Count", col=c("navyblue"))
+
+# trend overtime not-hispanic Asian/pacific Islander
+a_nh_trend <- filter(temp, temp$Perpetrator.Race == "Asian/Pacific Islander" & temp$Perpetrator.Ethnicity == "Not Hispanic")
+a_nh_trend_tbl <- table(a_nh_trend$Year, a_nh_trend$Perpetrator.Race)
+a_nh_trend_graph <- barplot(a_nh_trend_tbl, main="Trend of Non-Hispanic Asian/Pacific Islander Perpetrators 1980-2014",
+        xlab="Year", ylab= "Perpetrator Count", col=c("lightcoral"))
+
+# trend overtime not-hispanic Alaska Native/ Native American 
+an_nh_trend <- filter(temp, temp$Perpetrator.Race == "Native American/Alaska Native" & temp$Perpetrator.Ethnicity == "Not Hispanic")
+an_nh_trend_tbl <-table(an_nh_trend$Year, an_nh_trend$Perpetrator.Race)
+an_nh_trend_graph <- barplot(a_nh_trend_tbl, main="Trend of Non-Hispanic Native American/ Alaska Native Perpetrators 1980-2014",
+                             xlab="Year", ylab= "Perpetrator Count", col=c("green"))
+
+
+# nh victims by nh perpetrators
+temp_nh_pv <- filter(temp, temp$Perpetrator.Ethnicity == "Not Hispanic" & temp$Victim.Ethnicity == "Not Hispanic")
+temp_nh_pv_tbl <- table(temp_nh_pv$Perpetrator.Race, temp_nh_pv$Victim.Race)
+
+write.csv(temp_nh_pv_tbl, "/Users/zainabsherani/Downloads/temp_nh_pv_Homicides.csv", row.names = T)
+
+# hispanic perp and h victims
+temp_h_pv <- filter(temp, temp$Perpetrator.Ethnicity == "Hispanic" & temp$Victim.Ethnicity == "Hispanic")
+temp_h_pv_tbl <- table(temp_h_pv$Perpetrator.Race, temp_h_pv$Victim.Race)
+
+write.csv(temp_h_pv_tbl, "/Users/zainabsherani/Downloads/temp_h_pvHomicides.csv", row.names = T)
+
+#nh perp h victim
+temp_nhp_hv <- filter(temp, temp$Perpetrator.Ethnicity == "Not Hispanic" & temp$Victim.Ethnicity == "Hispanic")
+temp_nhp_hv_tbl <- table(temp_nhp_hv$Perpetrator.Race, temp_nhp_hv$Victim.Race)
+
+write.csv(temp_nhp_hv_tbl, "/Users/zainabsherani/Downloads/temp_nhp_hvHomicides.csv", row.names = T)
+
+# h perp and nh victim
+temp_hp_nhv <- filter(temp, temp$Perpetrator.Ethnicity == "Hispanic" & temp$Victim.Ethnicity == "Not Hispanic")
+temp_hp_nhv_tbl <- table(temp_hp_nhv$Perpetrator.Race, temp_hp_nhv$Victim.Race)
+
+write.csv(temp_hp_nhv_tbl, "/Users/zainabsherani/Downloads/temp_hp_nhvHomicides.csv", row.names = T)
+
+# change Victim.Count=0 to Victim.Count = 1 to see if the perpetrator by victims graph changes at all
+temp$Victim.Count[temp$Victim.Count == 1] <- 0
+
+
+write.csv(bmor_vp_tbl1, "/Users/zainabsherani/Downloads/bmor_vpHomicides.csv", row.names = T)
+write.csv(an_nh_trend_tbl, "/Users/zainabsherani/Downloads/anNhSingleHomicides.csv", row.names = T)
+write.csv(a_nh_trend_tbl, "/Users/zainabsherani/Downloads/aNhSingleHomicides.csv", row.names = T)
+write.csv(bk_nh_trend_tbl, "/Users/zainabsherani/Downloads/BkNhSingleHomicides.csv", row.names = T)
+write.csv(w_nh_trend_tbl, "/Users/zainabsherani/Downloads/WNhSingleHomicides.csv", row.names = T)
+write.csv(h_trend_tbl, "/Users/zainabsherani/Downloads/HispanicSingleHomicides.csv", row.names = T)
+write.csv(temp, "/Users/zainabsherani/Downloads/HomicideSinglePerpetrators.csv", row.names=T)
